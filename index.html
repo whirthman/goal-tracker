@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Link manifest -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#3f51b5" />
+    <title>Goal Tracker V2</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div id="previewOverlay" onclick="closePreview()">
+        <span>&times;</span>
+        <img id="previewImage" />
+    </div>
+
+    <header>
+        <h1>🎯 Goal Tracker V2</h1>
+        <div class="header-buttons" id="headerButtons">
+            <button onclick="toggleDarkMode()">🌓 Toggle Dark Mode</button>
+            <button onclick="generatePDF()">📄 Export PDF</button>
+            <button onclick="exportCSV()">📤 Export CSV</button>
+            <button onclick="toggleActiveGoals()">📋 Toggle Active Items</button>
+            <button onclick="toggleArchive()">📦 Toggle Bought Items</button>
+        </div>
+        <div class="hamburger-menu" onclick="toggleMenu()">&#9776;</div>
+    </header>
+    <div class="container">
+        <section class="dashboard">
+            <div class="card"><h3>Total Goals</h3><p id="totalGoals">0</p></div>
+            <div class="card"><h3>Total Needed</h3><p id="totalNeeded">GHS 0</p></div>
+            <div class="card"><h3>Available Balance</h3><input type="number" id="availableBalance" placeholder="Enter GHS" oninput="updateAvailableBalanceAndDashboard()" /></div>
+            <div class="card"><h3>Shortfall</h3><p id="shortfall">GHS 0</p></div>
+            <div class="card"><h3>Surplus</h3><p id="surplus">GHS 0</p></div>
+        </section>
+
+        <div class="add-goal-button-container">
+            <button class="add-goal-main-btn" onclick="openModal('addGoalModal')">➕ Add New Goal</button>
+        </div>
+
+        <div id="activeGoalsSection">
+            <div class="filters">
+                <input type="text" id="searchBar" placeholder="Search active goals..." oninput="renderGoals()" />
+                <select id="filterCategory" onchange="renderGoals()">
+                    <option value="">All Categories</option>
+                    <option>Tech & Gadgets</option>
+                    <option>Home Appliances</option>
+                    <option>Transport</option>
+                    <option>Furniture</option>
+                    <option>Vehicles</option>
+                    <option>Fashion & Clothing</option>
+                    <option>Education</option>
+                    <option>Business & Work Tools</option>
+                    <option>Travel & Vacation</option>
+                    <option>Personal & Self-Care</option>
+                    <option>Healthcare</option>
+                    <option>Lifestyle</option>
+                    <option>Investment</option>
+                    <option>Savings</option>
+                    <option>Debt Reduction</option>
+                    <option>Other</option>
+                </select>
+                <select id="sortBy" onchange="renderGoals()">
+                    <option value="newest">Sort: Newest Creation</option>
+                    <option value="oldest">Sort: Oldest Creation</option>
+                    <option value="highest">Sort: Highest Price</option>
+                    <option value="lowest">Sort: Lowest Price</option>
+                </select>
+            </div>
+
+            <h2>Active Goals</h2>
+            <div class="goal-list" id="goalList"></div>
+            <div class="pagination">
+                <button onclick="prevPage('active')">⬅ Prev</button>
+                <span id="pageInfoActive"></span>
+                <button onclick="nextPage('active')">Next ➡</button>
+            </div>
+        </div>
+
+        <div id="archiveSection">
+            <h2>Bought Archive</h2>
+            <div class="filters">
+                <input type="text" id="archiveSearchBar" placeholder="Search bought items..." oninput="renderGoals()" />
+                <select id="archiveFilterCategory" onchange="renderGoals()">
+                    <option value="">All Categories</option>
+                    <option>Tech & Gadgets</option>
+                    <option>Home Appliances</option>
+                    <option>Transport</option>
+                    <option>Furniture</option>
+                    <option>Vehicles</option>
+                    <option>Fashion & Clothing</option>
+                    <option>Education</option>
+                    <option>Business & Work Tools</option>
+                    <option>Travel & Vacation</option>
+                    <option>Personal & Self-Care</option>
+                    <option>Healthcare</option>
+                    <option>Lifestyle</option>
+                    <option>Investment</option>
+                    <option>Savings</option>
+                    <option>Debt Reduction</option>
+                    <option>Other</option>
+                </select>
+                <select id="archiveFilterYear" onchange="renderGoals()">
+                    <option value="">All Years</option>
+                </select>
+                <select id="archiveFilterMonth" onchange="renderGoals()">
+                    <option value="">All Months</option>
+                </select>
+                <select id="archiveSortBy" onchange="renderGoals()">
+                    <option value="newest_bought">Sort: Newest Purchase</option>
+                    <option value="oldest_bought">Sort: Oldest Purchase</option>
+                    <option value="highest">Sort: Highest Price</option>
+                    <option value="lowest">Sort: Lowest Price</option>
+                </select>
+            </div>
+            <div class="archive-list" id="archiveList"></div>
+            <div class="pagination">
+                <button onclick="prevPage('archive')">⬅ Prev</button>
+                <span id="pageInfoArchive"></span>
+                <button onclick="nextPage('archive')">Next ➡</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-wrapper" id="activeGoalsChartWrapper">
+                <h2>Active Goals Breakdown</h2>
+                <canvas id="activeGoalsChart"></canvas>
+            </div>
+            <div class="chart-wrapper" id="boughtItemsChartWrapper">
+                <h2>Bought Items Breakdown</h2>
+                <canvas id="boughtItemsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="addGoalModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal('addGoalModal')">&times;</span>
+            <h2>Add New Goal</h2>
+            <form id="goalForm" class="goal-form">
+                <input type="text" id="goalName" placeholder="Goal Name" required />
+                <input type="number" id="goalAmount" placeholder="Target Amount" required />
+                <textarea id="goalNote" placeholder="Description"></textarea>
+                <select id="goalCategory">
+                    <option value="">Select Category</option>
+                    <option>Tech & Gadgets</option>
+                    <option>Home Appliances</option>
+                    <option>Transport</option>
+                    <option>Furniture</option>
+                    <option>Vehicles</option>
+                    <option>Fashion & Clothing</option>
+                    <option>Education</option>
+                    <option>Business & Work Tools</option>
+                    <option>Travel & Vacation</option>
+                    <option>Personal & Self-Care</option>
+                    <option>Healthcare</option>
+                    <option>Lifestyle</option>
+                    <option>Investment</option>
+                    <option>Savings</option>
+                    <option>Debt Reduction</option>
+                    <option>Other</option>
+                </select>
+                <input type="file" id="goalImage" accept="image/*" />
+                <button type="submit" id="submitBtn">➕ Add Goal</button>
+            </form>
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("Service Worker Registered"))
+      .catch(err => console.log("SW registration failed:", err));
+  }
+</script>
+</body>
+</html>
